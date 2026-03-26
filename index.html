@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鋼片琴練習</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 背景裝飾 -->
+    <div class="bg-cloud" style="top: 80px; width: 120px; height: 60px; animation-delay: 0s;"></div>
+    <div class="bg-cloud" style="top: 150px; width: 180px; height: 80px; animation-delay: 5s;"></div>
+    <div class="bg-cloud" style="top: 50px; width: 100px; height: 50px; animation-delay: 10s;"></div>
+    <div class="bg-star" style="top: 50px; left: 10%; width: 30px; height: 30px; animation-delay: 0s;"></div>
+    <div class="bg-star" style="top: 100px; right: 15%; width: 40px; height: 40px; animation-delay: 0.5s;"></div>
+    <div class="bg-star" style="bottom: 150px; left: 5%; width: 25px; height: 25px; animation-delay: 1s;"></div>
+    <div class="bg-star" style="bottom: 80px; right: 10%; width: 35px; height: 35px; animation-delay: 1.5s;"></div>
+    <div class="bg-star" style="top: 200px; right: 5%; width: 20px; height: 20px; animation-delay: 2s;"></div>
+    <div class="bg-star" style="bottom: 200px; left: 15%; width: 28px; height: 28px; animation-delay: 2.5s;"></div>
+
+    <div class="effect-container" id="effectContainer"></div>
+
+    <div class="container">
+        <h1>✨ 鋼片琴練習 ✨</h1>
+
+        <div class="control-panel">
+            <div class="control-card">
+                <div class="control-label">速度 (BPM)</div>
+                <div class="bpm-control">
+                    <input type="range" id="bpmSlider" class="bpm-slider" min="40" max="200" value="108">
+                    <span class="bpm-value" id="bpmValue">108</span>
+                </div>
+            </div>
+            <button class="btn btn-metronome" id="metronomeBtn">節拍器</button>
+        </div>
+
+        <!-- 鋼片琴 -->
+        <div class="xylophone-container" id="xylophone">
+            <div class="xylophone-key key-B4" data-note="B4" data-solfege="t," data-key="a">
+                <div class="key-keyboard">A</div>
+                <div class="key-solfege">t,</div>
+                <div class="key-note">B4</div>
+            </div>
+            <div class="xylophone-key key-C5" data-note="C5" data-solfege="d" data-key="s">
+                <div class="key-keyboard">S</div>
+                <div class="key-solfege">d</div>
+                <div class="key-note">C5</div>
+            </div>
+            <div class="xylophone-key key-D5" data-note="D5" data-solfege="r" data-key="d">
+                <div class="key-keyboard">D</div>
+                <div class="key-solfege">r</div>
+                <div class="key-note">D5</div>
+            </div>
+            <div class="xylophone-key key-E5" data-note="E5" data-solfege="m" data-key="f">
+                <div class="key-keyboard">F</div>
+                <div class="key-solfege">m</div>
+                <div class="key-note">E5</div>
+            </div>
+            <div class="xylophone-key key-F5" data-note="F5" data-solfege="f" data-key="g">
+                <div class="key-keyboard">G</div>
+                <div class="key-solfege">f</div>
+                <div class="key-note">F5</div>
+            </div>
+            <!-- hidden trigger so keyboard key R still plays #F5 -->
+            <div data-note="#F5" data-key="r" style="display:none"></div>
+            <div class="xylophone-key key-G5" data-note="G5" data-solfege="s" data-key="h">
+                <div class="key-keyboard">H</div>
+                <div class="key-solfege">s</div>
+                <div class="key-note">G5</div>
+            </div>
+            <div class="xylophone-key key-A5" data-note="A5" data-solfege="l" data-key="j">
+                <div class="key-keyboard">J</div>
+                <div class="key-solfege">l</div>
+                <div class="key-note">A5</div>
+            </div>
+            <div class="xylophone-key key-B5" data-note="B5" data-solfege="t" data-key="k">
+                <div class="key-keyboard">K</div>
+                <div class="key-solfege">t</div>
+                <div class="key-note">B5</div>
+            </div>
+            <div class="xylophone-key key-C6" data-note="C6" data-solfege="d'" data-key="l">
+                <div class="key-keyboard">L</div>
+                <div class="key-solfege">d'</div>
+                <div class="key-note">C6</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
