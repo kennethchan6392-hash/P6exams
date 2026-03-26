@@ -26,8 +26,20 @@ function initAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
-    if (audioContext.state === 'suspended') audioContext.resume();
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
 }
+
+// Pre-warm audio context on first user interaction to eliminate delay
+document.addEventListener('click', function warmUp() {
+    initAudioContext();
+    document.removeEventListener('click', warmUp);
+}, { once: true });
+document.addEventListener('keydown', function warmUp() {
+    initAudioContext();
+    document.removeEventListener('keydown', warmUp);
+}, { once: true });
 
 function playNote(noteName) {
     initAudioContext();
@@ -139,11 +151,11 @@ metronomeBtn.addEventListener('click', () => {
     if (metronomeEnabled) {
         startMetronome();
         metronomeBtn.classList.add('active-btn');
-        metronomeBtn.textContent = '\u95dc\u9589\u7bc0\u62cd\u5668';
+        metronomeBtn.textContent = 'Stop';
     } else {
         stopMetronome();
         metronomeBtn.classList.remove('active-btn');
-        metronomeBtn.textContent = '\u7bc0\u62cd\u5668';
+        metronomeBtn.textContent = 'Metronome';
     }
 });
 
