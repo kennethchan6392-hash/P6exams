@@ -162,7 +162,7 @@ function playMetronomeTick(isStrong, time) {
     filter.frequency.setValueAtTime(isStrong ? 800 : 650, time);
     filter.Q.setValueAtTime(18, time);
     const gain = audioContext.createGain();
-    gain.gain.setValueAtTime(isStrong ? 1.8 : 1.0, time);
+    gain.gain.setValueAtTime(isStrong ? 2.5 : 1.4, time);
     gain.gain.exponentialRampToValueAtTime(0.001, time + 0.055);
     noise.connect(filter);
     filter.connect(gain);
