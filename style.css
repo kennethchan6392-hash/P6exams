@@ -25,6 +25,7 @@ body {
     background: #FFD700;
     clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
     animation: twinkle 3s infinite alternate ease-in-out;
+    will-change: transform, opacity;
     z-index: 0;
 }
 
@@ -34,6 +35,7 @@ body {
     border-radius: 50px;
     opacity: 0.75;
     animation: float 18s infinite linear;
+    will-change: transform;
     z-index: 0;
 }
 
@@ -61,6 +63,7 @@ body {
     height: 14px;
     clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
     animation: star-fly 0.8s ease-out forwards;
+    will-change: transform, opacity;
 }
 
 @keyframes star-fly {
@@ -77,6 +80,7 @@ body {
     box-shadow: 0 24px 64px rgba(92, 53, 160, 0.22);
     position: relative;
     z-index: 10;
+    contain: layout;
 }
 
 h1 {
@@ -128,7 +132,7 @@ h1 {
     width: 200px;
     height: 8px;
     border-radius: 4px;
-    background: #C5B3E8;
+    background: linear-gradient(to right, var(--color-secondary) var(--fill, 42.5%), #C5B3E8 var(--fill, 42.5%));
     outline: none;
     -webkit-appearance: none;
     appearance: none;
@@ -206,7 +210,8 @@ h1 {
     width: 76px;
     border-radius: 10px 10px 7px 7px;
     cursor: pointer;
-    transition: all 0.12s ease;
+    transition: transform 0.08s ease-out, filter 0.08s ease-out, box-shadow 0.08s ease-out;
+    will-change: transform, filter;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -240,7 +245,7 @@ h1 {
 }
 
 .xylophone-key.active {
-    transform: translateY(10px);
+    transform: translateY(10px) scale(0.96);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
     filter: brightness(0.8);
 }
@@ -300,6 +305,20 @@ h1 {
 }
 
 @media (max-width: 460px) {
-    .xylophone-key { width: 34px; }
+    h1 { font-size: 1.3rem; }
+    .control-panel { padding: 12px 16px; gap: 16px; }
     .container { padding: 24px 12px 36px; }
+    .xylophone-container { height: 180px; }
+    .xylophone-key { width: 34px; padding-bottom: 8px; }
+    .key-B4 { height: 125px; }
+    .key-C5 { height: 137px; }
+    .key-D5 { height: 148px; }
+    .key-E5 { height: 160px; }
+    .key-F5 { height: 171px; }
+    .key-G5 { height: 181px; }
+    .key-A5 { height: 190px; }
+    .key-B5 { height: 199px; }
+    .key-C6 { height: 207px; }
+    .key-note { display: none; }
+    .key-solfege { font-size: 0.75rem; }
 }

@@ -1,4 +1,8 @@
 let audioContext;
+let compressor;
+let woodblockBuffer;
+let malletAttackBuffer;
+
 const noteFrequencies = {
     'B4': 493.88,
     'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'F5': 698.46,
@@ -7,7 +11,8 @@ const noteFrequencies = {
 
 let currentBpm = 108;
 let metronomeEnabled = false;
-let metronomeInterval = null;
+let metronomeTimerId = null;
+let nextBeatTime = 0;
 let beatCount = 0;
 
 const bpmSlider = document.getElementById('bpmSlider');
@@ -25,6 +30,23 @@ document.querySelectorAll('[data-key]').forEach(el => {
 function initAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        compressor = audioContext.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-6, audioContext.currentTime);
+        compressor.ratio.setValueAtTime(4, audioContext.currentTime);
+        compressor.knee.setValueAtTime(10, audioContext.currentTime);
+        compressor.connect(audioContext.destination);
+        const wbSize = Math.ceil(audioContext.sampleRate * 0.06);
+        woodblockBuffer = audioContext.createBuffer(1, wbSize, audioContext.sampleRate);
+        const wbData = woodblockBuffer.getChannelData(0);
+        for (let i = 0; i < wbSize; i++) {
+            wbData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (wbSize * 0.15));
+        }
+        const maSize = Math.ceil(audioContext.sampleRate * 0.012);
+        malletAttackBuffer = audioContext.createBuffer(1, maSize, audioContext.sampleRate);
+        const maData = malletAttackBuffer.getChannelData(0);
+        for (let i = 0; i < maSize; i++) {
+            maData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (maSize * 0.2));
+        }
     }
     if (audioContext.state === 'suspended') {
         audioContext.resume();
@@ -58,7 +80,7 @@ function playNote(noteName) {
     gain1.gain.linearRampToValueAtTime(0.2, t + 0.5);
     gain1.gain.linearRampToValueAtTime(0, t + 1.5);
     osc1.connect(gain1);
-    gain1.connect(audioContext.destination);
+    gain1.connect(compressor);
     osc1.start(t);
     osc1.stop(t + 1.5);
 
@@ -72,9 +94,38 @@ function playNote(noteName) {
     gain2.gain.linearRampToValueAtTime(0.06, t + 0.15);
     gain2.gain.linearRampToValueAtTime(0, t + 0.6);
     osc2.connect(gain2);
-    gain2.connect(audioContext.destination);
+    gain2.connect(compressor);
     osc2.start(t);
     osc2.stop(t + 0.6);
+
+    // 5th harmonic (subtle brightness)
+    const osc3 = audioContext.createOscillator();
+    const gain3 = audioContext.createGain();
+    osc3.type = 'sine';
+    osc3.frequency.setValueAtTime(frequency * 5, t);
+    gain3.gain.setValueAtTime(0, t);
+    gain3.gain.linearRampToValueAtTime(0.06, t + 0.005);
+    gain3.gain.linearRampToValueAtTime(0.02, t + 0.1);
+    gain3.gain.linearRampToValueAtTime(0, t + 0.3);
+    osc3.connect(gain3);
+    gain3.connect(compressor);
+    osc3.start(t);
+    osc3.stop(t + 0.3);
+
+    // Mallet attack transient
+    const attackNoise = audioContext.createBufferSource();
+    attackNoise.buffer = malletAttackBuffer;
+    const attackFilter = audioContext.createBiquadFilter();
+    attackFilter.type = 'highpass';
+    attackFilter.frequency.setValueAtTime(4000, t);
+    const attackGain = audioContext.createGain();
+    attackGain.gain.setValueAtTime(0.12, t);
+    attackGain.gain.exponentialRampToValueAtTime(0.001, t + 0.012);
+    attackNoise.connect(attackFilter);
+    attackFilter.connect(attackGain);
+    attackGain.connect(compressor);
+    attackNoise.start(t);
+    attackNoise.stop(t + 0.012);
 
     const keyEl = document.querySelector('.xylophone-key[data-note="' + noteName + '"]');
     if (keyEl) {
@@ -103,17 +154,21 @@ function createHitEffect(keyEl) {
     }
 }
 
-function playMetronomeTick(isStrong) {
-    initAudioContext();
-    const osc = audioContext.createOscillator();
+function playMetronomeTick(isStrong, time) {
+    const noise = audioContext.createBufferSource();
+    noise.buffer = woodblockBuffer;
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(isStrong ? 800 : 650, time);
+    filter.Q.setValueAtTime(18, time);
     const gain = audioContext.createGain();
-    osc.frequency.setValueAtTime(isStrong ? 1050 : 820, audioContext.currentTime);
-    gain.gain.setValueAtTime(isStrong ? 0.6 : 0.35, audioContext.currentTime);
-    gain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.08);
-    osc.connect(gain);
-    gain.connect(audioContext.destination);
-    osc.start();
-    osc.stop(audioContext.currentTime + 0.08);
+    gain.gain.setValueAtTime(isStrong ? 1.8 : 1.0, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.055);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(compressor);
+    noise.start(time);
+    noise.stop(time + 0.06);
 }
 
 function pulseMetronomeBtn() {
@@ -121,27 +176,44 @@ function pulseMetronomeBtn() {
     setTimeout(() => metronomeBtn.classList.remove('beat-pulse'), 120);
 }
 
+const SCHEDULE_AHEAD = 0.1;
+const SCHEDULER_INTERVAL = 25;
+
+function scheduler() {
+    while (nextBeatTime < audioContext.currentTime + SCHEDULE_AHEAD) {
+        const isStrong = beatCount % 4 === 0;
+        playMetronomeTick(isStrong, nextBeatTime);
+        const delay = Math.max(0, (nextBeatTime - audioContext.currentTime) * 1000);
+        setTimeout(pulseMetronomeBtn, delay);
+        beatCount++;
+        nextBeatTime += 60 / currentBpm;
+    }
+    metronomeTimerId = setTimeout(scheduler, SCHEDULER_INTERVAL);
+}
+
 function startMetronome() {
     stopMetronome();
+    initAudioContext();
     beatCount = 0;
-    playMetronomeTick(true);
-    pulseMetronomeBtn();
-    metronomeInterval = setInterval(() => {
-        beatCount++;
-        const isStrong = beatCount % 4 === 0;
-        playMetronomeTick(isStrong);
-        pulseMetronomeBtn();
-    }, (60 / currentBpm) * 1000);
+    nextBeatTime = audioContext.currentTime;
+    scheduler();
 }
 
 function stopMetronome() {
-    clearInterval(metronomeInterval);
-    metronomeInterval = null;
+    clearTimeout(metronomeTimerId);
+    metronomeTimerId = null;
 }
+
+function updateSliderFill() {
+    const pct = (currentBpm - 40) / (200 - 40) * 100;
+    bpmSlider.style.setProperty('--fill', pct + '%');
+}
+updateSliderFill();
 
 bpmSlider.addEventListener('input', (e) => {
     currentBpm = parseInt(e.target.value);
     bpmValue.textContent = currentBpm;
+    updateSliderFill();
     if (metronomeEnabled) startMetronome();
 });
 
@@ -172,9 +244,13 @@ xylophoneKeys.forEach(key => {
 document.addEventListener('keydown', (e) => {
     if (e.repeat || e.isComposing) return;
     let k = e.key.toLowerCase();
-    // Fallback for Chinese IME: extract letter from physical key code
-    if (!keyMap[k] && e.code && e.code.startsWith('Key')) {
-        k = e.code.slice(3).toLowerCase();
+    // Fallback for Chinese IME: extract key from physical key code
+    if (!keyMap[k] && e.code) {
+        if (e.code.startsWith('Key')) {
+            k = e.code.slice(3).toLowerCase();
+        } else if (e.code.startsWith('Digit')) {
+            k = e.code.slice(5);
+        }
     }
     const keyEl = keyMap[k];
     if (keyEl) {
